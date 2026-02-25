@@ -41,16 +41,11 @@ export async function POST(
   const { createServerSupabaseClient } = await import("@/lib/supabase/server");
   const supabase = await createServerSupabaseClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Get puzzle with answer using service role (bypasses RLS)
+  const { createAdminSupabaseClient } = await import("@/lib/supabase/admin");
+  const adminSupabase = createAdminSupabaseClient();
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  // Get puzzle with answer (server-side only)
-  const { data: puzzleData } = await supabase
+  const { data: puzzleData } = await adminSupabase
     .from("puzzles")
     .select("*")
     .eq("id", puzzleId)
@@ -62,50 +57,53 @@ export async function POST(
     return NextResponse.json({ error: "Puzzle not found" }, { status: 404 });
   }
 
-  // Check existing attempt
-  const { data: existingData } = await supabase
-    .from("attempts")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("puzzle_id", puzzleId)
-    .single();
-
-  const existing = existingData as Record<string, unknown> | null;
-
-  const guesses: string[] = (existing?.guesses as string[]) ?? [];
-  if (guesses.length >= 6 || existing?.solved) {
-    return NextResponse.json(
-      { error: "Game already completed" },
-      { status: 400 }
-    );
-  }
-
   const answer = puzzle.answer as string;
   const isCorrect =
     guess.trim().toLowerCase() === answer.trim().toLowerCase();
-  const newGuesses = [...guesses, guess];
-  const solved = isCorrect;
-  const solvedRound = isCorrect ? newGuesses.length : null;
+  const count = typeof guessCount === "number" ? guessCount : 1;
 
-  if (existing) {
-    await supabase
+  // If user is authenticated, persist the attempt
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    const { data: existingData } = await supabase
       .from("attempts")
-      .update({ guesses: newGuesses, solved, solved_round: solvedRound })
-      .eq("id", existing.id as string);
-  } else {
-    await supabase.from("attempts").insert({
-      user_id: user.id,
-      puzzle_id: puzzleId,
-      guesses: newGuesses,
-      solved,
-      solved_round: solvedRound,
-      completed_at: new Date().toISOString(),
-    });
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("puzzle_id", puzzleId)
+      .single();
+
+    const existing = existingData as Record<string, unknown> | null;
+
+    const guesses: string[] = (existing?.guesses as string[]) ?? [];
+    if (!(guesses.length >= 6 || existing?.solved)) {
+      const newGuesses = [...guesses, guess];
+      const solved = isCorrect;
+      const solvedRound = isCorrect ? newGuesses.length : null;
+
+      if (existing) {
+        await supabase
+          .from("attempts")
+          .update({ guesses: newGuesses, solved, solved_round: solvedRound })
+          .eq("id", existing.id as string);
+      } else {
+        await supabase.from("attempts").insert({
+          user_id: user.id,
+          puzzle_id: puzzleId,
+          guesses: newGuesses,
+          solved,
+          solved_round: solvedRound,
+          completed_at: new Date().toISOString(),
+        });
+      }
+    }
   }
 
   return NextResponse.json({
     correct: isCorrect,
-    guessCount: newGuesses.length,
-    answer: newGuesses.length >= 6 || isCorrect ? answer : undefined,
+    guessCount: count,
+    answer: count >= 6 || isCorrect ? answer : undefined,
   });
 }

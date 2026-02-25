@@ -1,7 +1,5 @@
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 CREATE TABLE puzzles (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   puzzle_number integer UNIQUE NOT NULL,
   publish_date date UNIQUE NOT NULL,
   answer text NOT NULL,
@@ -13,7 +11,7 @@ CREATE TABLE puzzles (
 );
 
 CREATE TABLE attempts (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   puzzle_id uuid NOT NULL REFERENCES puzzles(id) ON DELETE CASCADE,
   guesses jsonb NOT NULL DEFAULT '[]',
@@ -34,7 +32,7 @@ CREATE TABLE user_stats (
 );
 
 CREATE TABLE subscriptions (
-  id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   stripe_customer_id text,
   stripe_subscription_id text UNIQUE,

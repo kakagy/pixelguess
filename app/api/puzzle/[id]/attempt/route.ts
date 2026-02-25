@@ -1,15 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createServerSupabaseClient } from "@/lib/supabase/server";
-import type { Database } from "@/lib/supabase/types";
+import { demoPuzzles } from "@/lib/puzzle/demo-data";
 
-type PuzzleRow = Database["public"]["Tables"]["puzzles"]["Row"];
-type AttemptRow = Database["public"]["Tables"]["attempts"]["Row"];
+function isSupabaseConfigured(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return !!url && url.startsWith("http");
+}
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: puzzleId } = await params;
+
+  const body = await request.json();
+  const { guess, guessCount } = body;
+
+  if (!guess || typeof guess !== "string") {
+    return NextResponse.json({ error: "Invalid guess" }, { status: 400 });
+  }
+
+  if (!isSupabaseConfigured()) {
+    // Demo mode: validate answer against local data, no auth or persistence
+    const demoPuzzle = demoPuzzles.find((p) => p.id === puzzleId);
+    if (!demoPuzzle) {
+      return NextResponse.json({ error: "Puzzle not found" }, { status: 404 });
+    }
+
+    const isCorrect =
+      guess.trim().toLowerCase() === demoPuzzle.answer.trim().toLowerCase();
+    const count = typeof guessCount === "number" ? guessCount : 1;
+
+    return NextResponse.json({
+      correct: isCorrect,
+      guessCount: count,
+      answer: count >= 6 || isCorrect ? demoPuzzle.answer : undefined,
+    });
+  }
+
+  // Production mode: full Supabase flow
+  const { createServerSupabaseClient } = await import("@/lib/supabase/server");
   const supabase = await createServerSupabaseClient();
 
   const {
@@ -20,13 +49,6 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await request.json();
-  const { guess } = body;
-
-  if (!guess || typeof guess !== "string") {
-    return NextResponse.json({ error: "Invalid guess" }, { status: 400 });
-  }
-
   // Get puzzle with answer (server-side only)
   const { data: puzzleData } = await supabase
     .from("puzzles")
@@ -34,8 +56,7 @@ export async function POST(
     .eq("id", puzzleId)
     .single();
 
-  // Cast needed: supabase-js select("*") returns {} with hand-written Database types
-  const puzzle = puzzleData as PuzzleRow | null;
+  const puzzle = puzzleData as Record<string, unknown> | null;
 
   if (!puzzle) {
     return NextResponse.json({ error: "Puzzle not found" }, { status: 404 });
@@ -49,9 +70,9 @@ export async function POST(
     .eq("puzzle_id", puzzleId)
     .single();
 
-  const existing = existingData as AttemptRow | null;
+  const existing = existingData as Record<string, unknown> | null;
 
-  const guesses: string[] = existing?.guesses ?? [];
+  const guesses: string[] = (existing?.guesses as string[]) ?? [];
   if (guesses.length >= 6 || existing?.solved) {
     return NextResponse.json(
       { error: "Game already completed" },
@@ -59,8 +80,9 @@ export async function POST(
     );
   }
 
+  const answer = puzzle.answer as string;
   const isCorrect =
-    guess.trim().toLowerCase() === puzzle.answer.trim().toLowerCase();
+    guess.trim().toLowerCase() === answer.trim().toLowerCase();
   const newGuesses = [...guesses, guess];
   const solved = isCorrect;
   const solvedRound = isCorrect ? newGuesses.length : null;
@@ -69,7 +91,7 @@ export async function POST(
     await supabase
       .from("attempts")
       .update({ guesses: newGuesses, solved, solved_round: solvedRound })
-      .eq("id", existing.id);
+      .eq("id", existing.id as string);
   } else {
     await supabase.from("attempts").insert({
       user_id: user.id,
@@ -84,6 +106,6 @@ export async function POST(
   return NextResponse.json({
     correct: isCorrect,
     guessCount: newGuesses.length,
-    answer: newGuesses.length >= 6 || isCorrect ? puzzle.answer : undefined,
+    answer: newGuesses.length >= 6 || isCorrect ? answer : undefined,
   });
 }

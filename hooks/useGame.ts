@@ -53,7 +53,7 @@ export function useGame() {
       const res = await fetch(`/api/puzzle/${gameState.puzzle.id}/attempt`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ guess: input }),
+        body: JSON.stringify({ guess: input, guessCount: gameState.currentRound + 1 }),
       });
 
       const result = await res.json();

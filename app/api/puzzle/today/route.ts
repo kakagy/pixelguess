@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getTodayDateString, sanitizePuzzleForClient } from "@/lib/puzzle/service";
 import { getDemoPuzzleForToday } from "@/lib/puzzle/demo-data";
+import type { Database } from "@/lib/supabase/types";
+
+type PuzzleRow = Database["public"]["Tables"]["puzzles"]["Row"];
 
 function isSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -31,5 +34,5 @@ export async function GET() {
     return NextResponse.json(sanitizePuzzleForClient(demo));
   }
 
-  return NextResponse.json(sanitizePuzzleForClient(puzzle));
+  return NextResponse.json(sanitizePuzzleForClient(puzzle as PuzzleRow));
 }

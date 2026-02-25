@@ -5,10 +5,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+function getDateOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+}
+
 const seedPuzzles = [
   {
     puzzle_number: 1,
-    publish_date: "2026-03-01",
+    publish_date: getDateOffset(0), // today
     answer: "knight",
     category: "game character",
     hints: ["", "RPG character", "Medieval era", "Wears heavy armor", "Carries a sword and shield", "Starts with K"],
@@ -24,7 +30,7 @@ const seedPuzzles = [
   },
   {
     puzzle_number: 2,
-    publish_date: "2026-03-02",
+    publish_date: getDateOffset(1),
     answer: "slime",
     category: "monster",
     hints: ["", "Classic RPG enemy", "Usually the first encounter", "Gelatinous body", "Often green or blue", "Starts with S"],
@@ -40,7 +46,7 @@ const seedPuzzles = [
   },
   {
     puzzle_number: 3,
-    publish_date: "2026-03-03",
+    publish_date: getDateOffset(2),
     answer: "treasure chest",
     category: "item",
     hints: ["", "Found in dungeons", "Contains rewards", "Made of wood and metal", "A staple of adventure games", "Starts with T"],
@@ -56,7 +62,7 @@ const seedPuzzles = [
   },
   {
     puzzle_number: 4,
-    publish_date: "2026-03-04",
+    publish_date: getDateOffset(3),
     answer: "dragon",
     category: "monster",
     hints: ["", "A mythical creature", "Breathes fire", "Has wings and scales", "Often guards treasure", "Starts with D"],
@@ -72,7 +78,7 @@ const seedPuzzles = [
   },
   {
     puzzle_number: 5,
-    publish_date: "2026-03-05",
+    publish_date: getDateOffset(4),
     answer: "mushroom",
     category: "item",
     hints: ["", "Found in many platformers", "A consumable power-up", "Has a spotted cap", "Grows from the ground", "Starts with M"],
@@ -88,7 +94,7 @@ const seedPuzzles = [
   },
   {
     puzzle_number: 6,
-    publish_date: "2026-03-06",
+    publish_date: getDateOffset(5),
     answer: "potion",
     category: "item",
     hints: ["", "An RPG consumable", "Restores health or mana", "Comes in a glass container", "Filled with colorful liquid", "Starts with P"],
@@ -104,7 +110,7 @@ const seedPuzzles = [
   },
   {
     puzzle_number: 7,
-    publish_date: "2026-03-07",
+    publish_date: getDateOffset(6),
     answer: "sword",
     category: "item",
     hints: ["", "A classic RPG weapon", "Used in melee combat", "Has a blade and handle", "The hero's trusty weapon", "Starts with S"],

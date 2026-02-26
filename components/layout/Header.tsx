@@ -17,6 +17,12 @@ export function Header() {
           <Link href="/pricing" className="hover:underline">
             Premium
           </Link>
+          <Link
+            href="/rpg"
+            className="hover:underline text-yellow-500 hover:text-yellow-400 font-bold"
+          >
+            ⚔️ RPG
+          </Link>
         </div>
       </nav>
     </header>

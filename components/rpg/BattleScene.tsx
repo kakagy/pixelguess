@@ -1,6 +1,7 @@
 "use client";
 import { BattleCanvas } from "./BattleCanvas";
 import { BattleUI } from "./BattleUI";
+import { BattleResult } from "./BattleResult";
 import { useBattle } from "@/hooks/useBattle";
 import { useRouter } from "next/navigation";
 
@@ -31,17 +32,20 @@ export function BattleScene({ battleId }: Props) {
         onAction={sendAction}
       />
       {battleState.status === "finished" && (
-        <div className="text-center mt-6">
-          <p className="text-2xl font-bold font-mono text-white mb-4">
-            {battleState.winner === "draw" ? "Draw!" :
-              (battleState.winner === myRole ? "Victory!" : "Defeat...")}
-          </p>
-          <button
-            onClick={() => router.push("/rpg")}
-            className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-mono"
-          >
-            Return Home
-          </button>
+        <div className="mt-6">
+          <BattleResult
+            battleId={battleId}
+            winner={battleState.winner}
+            myRole={myRole}
+          />
+          <div className="text-center mt-4">
+            <button
+              onClick={() => router.push("/rpg")}
+              className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-mono"
+            >
+              Return Home
+            </button>
+          </div>
         </div>
       )}
     </div>

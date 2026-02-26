@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const GEM_PACKAGES = [
@@ -8,7 +8,7 @@ const GEM_PACKAGES = [
   { gems: 1200, price: "$7.99", index: 2 },
 ];
 
-export default function ShopPage() {
+function ShopContent() {
   const [gems, setGems] = useState(0);
   const [purchasing, setPurchasing] = useState(false);
   const router = useRouter();
@@ -84,5 +84,13 @@ export default function ShopPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-900 text-white p-6 flex items-center justify-center"><p className="font-mono">Loading...</p></div>}>
+      <ShopContent />
+    </Suspense>
   );
 }

@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     .from("user_currency")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .single() as { data: Record<string, any> | null; error: any };
 
   if (!currency || currency.gems < totalCost) {
     return NextResponse.json({ error: "Not enough gems" }, { status: 400 });

@@ -31,7 +31,7 @@ export async function POST() {
     .from("leaderboard")
     .select("*")
     .eq("user_id", user.id)
-    .single();
+    .single() as { data: Record<string, any> | null; error: any };
 
   const myRating = leaderboardEntry?.rating ?? 1000;
 

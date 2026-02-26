@@ -23,22 +23,33 @@ export async function POST(request: NextRequest) {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.client_reference_id!;
-    const subscriptionId = session.subscription as string;
 
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
-      expand: ["items.data"],
-    });
+    if (session.metadata?.type === "gem_purchase") {
+      const userId = session.metadata.user_id;
+      const gems = parseInt(session.metadata.gems, 10);
 
-    const periodEnd = subscription.items.data[0]?.current_period_end ?? 0;
+      await getSupabaseAdmin().rpc("increment_gems", {
+        p_user_id: userId,
+        p_gems: gems,
+      });
+    } else {
+      const userId = session.client_reference_id!;
+      const subscriptionId = session.subscription as string;
 
-    await getSupabaseAdmin().from("subscriptions").upsert({
-      user_id: userId,
-      stripe_customer_id: session.customer as string,
-      stripe_subscription_id: subscriptionId,
-      status: subscription.status,
-      current_period_end: new Date(periodEnd * 1000).toISOString(),
-    });
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId, {
+        expand: ["items.data"],
+      });
+
+      const periodEnd = subscription.items.data[0]?.current_period_end ?? 0;
+
+      await getSupabaseAdmin().from("subscriptions").upsert({
+        user_id: userId,
+        stripe_customer_id: session.customer as string,
+        stripe_subscription_id: subscriptionId,
+        status: subscription.status,
+        current_period_end: new Date(periodEnd * 1000).toISOString(),
+      });
+    }
   }
 
   if (event.type === "customer.subscription.updated" || event.type === "customer.subscription.deleted") {
